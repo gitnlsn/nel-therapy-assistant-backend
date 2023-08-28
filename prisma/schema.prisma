@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                      String                   @id @default(uuid())
+  name                    String
+  observations            PatientNote[]
+  appointments            Appointment[]
+  recordingTranscriptions RecordingTranscription[]
+  speeches                Speech[]
+}
+
+model PatientNote {
+  id String @id @default(uuid())
+
+  text String
+
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+}
+
+enum AppointmentStatus {
+  scheduled
+  done
+  canceled
+  deleted
+}
+
+model Appointment {
+  id String @id @default(uuid())
+
+  date     DateTime
+  // Duration in seconds
+  duration Int
+  status   AppointmentStatus
+
+  appointmentNotes AppointmentNote[]
+
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+}
+
+model AppointmentNote {
+  id String @id @default(uuid())
+
+  text String
+
+  appintment    Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId String
+}
+
+model RecordingTranscription {
+  id String @id @default(uuid())
+
+  date     DateTime
+  // Duration in seconds
+  duration Int
+  speech   TranscriptionSpeech[]
+
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId String
+}
+
+model TranscriptionSpeech {
+  id String @id @default(uuid())
+
+  text String
+  date DateTime
+
+  transcription            RecordingTranscription @relation(fields: [recordingTranscriptionId], references: [id], onDelete: Cascade)
+  recordingTranscriptionId String
+  transcriptionEdition     TranscriptionEdition?
+  speech                   Speech?
+}
+
+model Speech {
+  id String @id @default(uuid())
+
+  text String
+  date DateTime
+
+  transcription         TranscriptionSpeech @relation(fields: [transcriptionSpeechId], references: [id])
+  transcriptionSpeechId String              @unique
+
+  patient   Patient? @relation(fields: [patientId], references: [id])
+  patientId String?
+}
+
+model TranscriptionEdition {
+  id String @id @default(uuid())
+
+  originalSpeech        TranscriptionSpeech @relation(fields: [transcriptionSpeechId], references: [id])
+  transcriptionSpeechId String              @unique
+
+  newSpeech String
+}
