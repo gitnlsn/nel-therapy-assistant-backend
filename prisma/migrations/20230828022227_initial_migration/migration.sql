@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "AppointmentStatus" AS ENUM ('scheduled', 'done', 'canceled');
+CREATE TYPE "AppointmentStatus" AS ENUM ('scheduled', 'done', 'canceled', 'deleted');
 
 -- CreateTable
 CREATE TABLE "Patient" (
@@ -49,14 +49,40 @@ CREATE TABLE "RecordingTranscription" (
 );
 
 -- CreateTable
-CREATE TABLE "Speech" (
+CREATE TABLE "TranscriptionSpeech" (
     "id" TEXT NOT NULL,
     "text" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "recordingTranscriptionId" TEXT NOT NULL,
 
+    CONSTRAINT "TranscriptionSpeech_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Speech" (
+    "id" TEXT NOT NULL,
+    "text" TEXT NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "transcriptionSpeechId" TEXT NOT NULL,
+    "patientId" TEXT,
+
     CONSTRAINT "Speech_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateTable
+CREATE TABLE "TranscriptionEdition" (
+    "id" TEXT NOT NULL,
+    "transcriptionSpeechId" TEXT NOT NULL,
+    "newSpeech" TEXT NOT NULL,
+
+    CONSTRAINT "TranscriptionEdition_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Speech_transcriptionSpeechId_key" ON "Speech"("transcriptionSpeechId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TranscriptionEdition_transcriptionSpeechId_key" ON "TranscriptionEdition"("transcriptionSpeechId");
 
 -- AddForeignKey
 ALTER TABLE "PatientNote" ADD CONSTRAINT "PatientNote_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -71,4 +97,13 @@ ALTER TABLE "AppointmentNote" ADD CONSTRAINT "AppointmentNote_appointmentId_fkey
 ALTER TABLE "RecordingTranscription" ADD CONSTRAINT "RecordingTranscription_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Speech" ADD CONSTRAINT "Speech_recordingTranscriptionId_fkey" FOREIGN KEY ("recordingTranscriptionId") REFERENCES "RecordingTranscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TranscriptionSpeech" ADD CONSTRAINT "TranscriptionSpeech_recordingTranscriptionId_fkey" FOREIGN KEY ("recordingTranscriptionId") REFERENCES "RecordingTranscription"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Speech" ADD CONSTRAINT "Speech_transcriptionSpeechId_fkey" FOREIGN KEY ("transcriptionSpeechId") REFERENCES "TranscriptionSpeech"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Speech" ADD CONSTRAINT "Speech_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TranscriptionEdition" ADD CONSTRAINT "TranscriptionEdition_transcriptionSpeechId_fkey" FOREIGN KEY ("transcriptionSpeechId") REFERENCES "TranscriptionSpeech"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
