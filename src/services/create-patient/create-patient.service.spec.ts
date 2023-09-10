@@ -25,6 +25,7 @@ describe('CreatePatientService', () => {
   it('should create patient in database', async () => {
     const createdPatient = await service.create({
       name: 'patient name',
+      notes: [],
     });
 
     const existingPatients = await prismaService.patient.findMany();
@@ -32,5 +33,20 @@ describe('CreatePatientService', () => {
     expect(existingPatients.length).toBe(1);
     expect(existingPatients[0].id).toBe(createdPatient.id);
     expect(existingPatients[0].name).toBe(createdPatient.name);
+  });
+
+  it('should create patient with notes in database', async () => {
+    const createdPatient = await service.create({
+      name: 'patient name',
+      notes: ['note 1'],
+    });
+
+    const existingPatients = await prismaService.patient.findMany({
+      include: { notes: true },
+    });
+
+    expect(existingPatients.length).toBe(1);
+    expect(existingPatients[0].notes.length).toBe(1);
+    expect(existingPatients[0].notes[0].text).toBe('note 1');
   });
 });

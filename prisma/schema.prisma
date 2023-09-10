@@ -13,10 +13,9 @@ datasource db {
 model Patient {
   id                      String                   @id @default(uuid())
   name                    String
-  observations            PatientNote[]
+  notes                   PatientNote[]
   appointments            Appointment[]
   recordingTranscriptions RecordingTranscription[]
-  speeches                Speech[]
 }
 
 model PatientNote {
@@ -58,48 +57,60 @@ model AppointmentNote {
   appointmentId String
 }
 
+// Transcription is a model composed of original speeches and highlighted speeches
 model RecordingTranscription {
   id String @id @default(uuid())
 
-  date     DateTime
-  // Duration in seconds
-  duration Int
-  speech   TranscriptionSpeech[]
+  createdAt DateTime @default(now())
+
+  date        DateTime
+  duration    Int // Duration in seconds
+  description String
+
+  speeches TranscriptionSpeech[]
 
   patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
   patientId String
+
+  originalRef TranscriptionEdition[] @relation("original")
+  editionRef  TranscriptionEdition[] @relation("edition")
 }
 
+// Transcriptions speeches are the original speeches inserted throught transcription
 model TranscriptionSpeech {
   id String @id @default(uuid())
 
   text String
   date DateTime
 
+  notes SpeechNote[]
+  marks SpeechMark[]
+
   transcription            RecordingTranscription @relation(fields: [recordingTranscriptionId], references: [id], onDelete: Cascade)
   recordingTranscriptionId String
-  transcriptionEdition     TranscriptionEdition?
-  speech                   Speech?
 }
 
-model Speech {
+enum SpeechMark {
+  star
+  saved
+  important
+  ignore
+}
+
+model SpeechNote {
   id String @id @default(uuid())
 
   text String
-  date DateTime
 
-  transcription         TranscriptionSpeech @relation(fields: [transcriptionSpeechId], references: [id])
-  transcriptionSpeechId String              @unique
-
-  patient   Patient? @relation(fields: [patientId], references: [id])
-  patientId String?
+  transcriptionSpeech   TranscriptionSpeech? @relation(fields: [transcriptionSpeechId], references: [id])
+  transcriptionSpeechId String?
 }
 
 model TranscriptionEdition {
   id String @id @default(uuid())
 
-  originalSpeech        TranscriptionSpeech @relation(fields: [transcriptionSpeechId], references: [id])
-  transcriptionSpeechId String              @unique
-
-  newSpeech String
+  original                RecordingTranscription @relation("original", fields: [originalTranscriptionId], references: [id], onDelete: Cascade)
+  edition                 RecordingTranscription @relation("edition", fields: [editionTranscriptionId], references: [id], onDelete: Cascade)
+  originalTranscriptionId String
+  editionTranscriptionId  String
 }
